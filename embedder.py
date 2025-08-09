@@ -12,8 +12,12 @@ from typing import List, Dict, Any
 import logging
 import asyncio
 from config import Config
-
+from config import Config
+import sys, logging
 logger = logging.getLogger(__name__)
+if not Config.PINECONE_API_KEY:
+    logger.fatal("PINECONE_API_KEY is not set in the environment.")
+    sys.exit(1)
 # --- Corrected Initialization ---
 try:
     # Initialize Pinecone Client
