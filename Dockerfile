@@ -1,10 +1,9 @@
-# Multi-stage build for smaller image
+# ---------- Builder ----------
 FROM python:3.10-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    gcc g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -15,7 +14,18 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Final stage
+# Force pre-bake model into /opt/models
+RUN mkdir -p /opt/models/sentence-transformers/all-MiniLM-L6-v2
+RUN python - <<'PY'
+from sentence_transformers import SentenceTransformer
+import os
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+out_dir = f"/opt/models/{model_name}"
+SentenceTransformer(model_name).save(out_dir)
+print("Pre-baked model saved to", out_dir)
+PY
+
+# ---------- Final ----------
 FROM python:3.10-slim
 
 # Install runtime dependencies
@@ -40,12 +50,18 @@ WORKDIR /app
 # Copy application code
 COPY . .
 
-# Create cache directory
-RUN mkdir -p /app/cache
+# Copy pre-baked model into /app/models
+COPY --from=builder /opt/models /app/models
 
-# Set environment variables for Railway
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
+# Create cache directory
+RUN mkdir -p /app/cache/hf
+
+# Set environment variables
+ENV HF_HOME=/app/cache/hf \
+    TRANSFORMERS_CACHE=/app/cache/hf \
+    EMBEDDING_MODEL=./models/sentence-transformers/all-MiniLM-L6-v2 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
