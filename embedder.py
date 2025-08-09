@@ -14,7 +14,6 @@ import asyncio
 from config import Config
 
 logger = logging.getLogger(__name__)
-
 # --- Corrected Initialization ---
 try:
     # Initialize Pinecone Client
