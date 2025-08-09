@@ -15,7 +15,7 @@ class Config:
     # Processing settings
     MAX_TOKENS_PER_CHUNK = 256
     CHUNK_OVERLAP = 30
-    EMBEDDING_MODEL = './models/sentence-transformers/all-MiniLM-L6-v2'
+    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     EMBEDDING_DIMENSION = 384
     
     # Cache settings
